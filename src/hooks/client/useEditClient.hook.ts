@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
+import { showAlert } from "../../utils/alerts";
 
 const useUpdateClienteForm = (id) => {
   const [updateClient, setUpdateClient] = useState({
@@ -39,9 +40,8 @@ const useUpdateClienteForm = (id) => {
           },
         }
       );
-      console.log("Respuesta de la API:", response.data);
 
-      if (response.status !== 200) {
+      if (response.data.statusCode !== 200) {
         throw new Error(
           response.data.message || "Hubo un error al enviar los datos"
         );
@@ -56,6 +56,7 @@ const useUpdateClienteForm = (id) => {
         direccion: "",
         email: "",
       });
+      showAlert("Cliente actualizado exitosamente", "success");
     } catch (err) {
       console.error("Error en la solicitud:", err);
       setErrorUpdate(

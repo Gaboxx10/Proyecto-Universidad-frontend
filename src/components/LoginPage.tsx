@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import { showAlert } from "../utils/alerts";
 
 export default function LoginPage() {
   const [user_name, setUsername] = useState("");
@@ -73,10 +74,10 @@ export default function LoginPage() {
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-            disabled={loading} // Desactivar el botón mientras está en carga
+            disabled={loading} 
           >
             {loading ? (
-              <span>Cargando...</span> // Mostrar "Cargando..." mientras se autentica
+              <span>Cargando...</span> 
             ) : (
               <>
                 <i className="bi bi-box-arrow-in-right"></i>

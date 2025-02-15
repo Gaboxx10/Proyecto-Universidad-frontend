@@ -3,7 +3,6 @@ import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import { persist } from "zustand/middleware";
 
-// Definir la interfaz de usuario
 interface User {
   id: string;
   user_name: string;
@@ -11,7 +10,6 @@ interface User {
   rol: string;
 }
 
-// Definir la interfaz del estado de autenticación
 interface AuthState {
   user: User;
   isAuthenticated: boolean;
@@ -22,7 +20,6 @@ interface AuthState {
   fetchUserData: (userId: string, token: string) => Promise<void>;
 }
 
-// Crear el store con Zustand y persistencia
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -50,7 +47,6 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      // Lógica de login (mutación)
       mutateLogin: async (user_name: string, password: string) => {
         try {
           const response = await axios.post(
@@ -78,6 +74,9 @@ export const useAuthStore = create<AuthState>()(
           set({
             loginError: error.response?.data?.message || "Error desconocido",
           });
+          setTimeout(() => {
+            set({ loginError: null });
+          }, 5000);
         }
       },
 

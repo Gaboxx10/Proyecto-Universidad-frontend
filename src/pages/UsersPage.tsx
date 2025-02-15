@@ -40,7 +40,7 @@ export default function UsersPage() {
     setUsers(mockUsers);
   }, []);
 
-  if (currentUser?.role !== 'admin') {
+  if (currentUser?.rol !== 'ADMIN') {
     return (
       <div className="p-8 text-center">
         <h2 className="text-2xl font-bold text-red-600">Acceso Denegado</h2>

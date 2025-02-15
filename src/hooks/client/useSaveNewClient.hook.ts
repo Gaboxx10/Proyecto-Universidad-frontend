@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
-import { showAlert } from "../utils/alerts";
+import { showAlert } from "../../utils/alerts";
 
 const useCreateClienteForm = () => {
   const [newClient, setNewClient] = useState({
@@ -35,7 +35,7 @@ const useCreateClienteForm = () => {
       );
       console.log("Respuesta de la API:", response.data);
 
-      if (response.status !== 201) {
+      if (response.data.statusCode !== 201) {
         throw new Error(
           response.data.message || "Hubo un error al enviar los datos"
         );
@@ -51,6 +51,7 @@ const useCreateClienteForm = () => {
         direccion: "",
         email: "",
       });
+      setIsLoadingCreate(false);
       showAlert("Cliente creado exitosamente", "success");
     } catch (err) {
       console.error("Error en la solicitud:", err);

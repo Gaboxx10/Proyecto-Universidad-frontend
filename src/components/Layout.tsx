@@ -1,29 +1,79 @@
-import React, { useState } from 'react';
-import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
+import React, { useEffect, useState } from "react";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import axios from "axios";
 
 export default function Layout() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [company, setCompany] = useState({
+    nombre: "",
+    rif: "",
+  });
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
+  useEffect(() => {
+    const companyData = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/company/", {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("token"),
+          },
+        });
+        companyData();
+        if (response.status === 200) {
+          setCompany({
+            nombre: response.data.nombre,
+            rif: response.data.rif,
+          });
+        }
+      } catch (error) {
+        console.error("Error al obtener datos de la empresa:", error);
+      }
+    };
+  });
+
   const menuItems = [
-    { icon: 'bi-house', label: 'Inicio', path: '/dashboard' },
-    { icon: 'bi-building', label: 'Empresa', path: '/dashboard/empresa', adminOnly: true },
-    { icon: 'bi-people', label: 'Usuarios', path: '/dashboard/usuarios', adminOnly: true },
-    { icon: 'bi-person', label: 'Clientes', path: '/dashboard/clientes' },
-    { icon: 'bi-car-front', label: 'Vehículos', path: '/dashboard/vehiculos' },
-    { icon: 'bi-tools', label: 'Diagnósticos', path: '/dashboard/diagnosticos' },
-    { icon: 'bi-file-text', label: 'Presupuestos', path: '/dashboard/presupuestos' },
-    { icon: 'bi-clipboard', label: 'Órdenes de Trabajo', path: '/dashboard/ordenes' },
-    { icon: 'bi-receipt', label: 'Facturas', path: '/dashboard/facturas' },
-    { icon: 'bi-shop', label: 'Proveedores', path: '/dashboard/proveedores' },
+    { icon: "bi-house", label: "Inicio", path: "/dashboard" },
+    {
+      icon: "bi-building",
+      label: "Empresa",
+      path: "/dashboard/empresa",
+      adminOnly: true,
+      asistantOnly: true,
+    },
+    {
+      icon: "bi-people",
+      label: "Usuarios",
+      path: "/dashboard/usuarios",
+      adminOnly: true,
+      asistantOnly: true,
+    },
+    { icon: "bi-person", label: "Clientes", path: "/dashboard/clientes" },
+    { icon: "bi-car-front", label: "Vehículos", path: "/dashboard/vehiculos" },
+    {
+      icon: "bi-tools",
+      label: "Diagnósticos",
+      path: "/dashboard/diagnosticos",
+    },
+    {
+      icon: "bi-file-text",
+      label: "Presupuestos",
+      path: "/dashboard/presupuestos",
+    },
+    {
+      icon: "bi-clipboard",
+      label: "Órdenes de Trabajo",
+      path: "/dashboard/ordenes",
+    },
+    { icon: "bi-receipt", label: "Facturas", path: "/dashboard/facturas" },
+    { icon: "bi-shop", label: "Proveedores", path: "/dashboard/proveedores" },
   ];
 
   if (!user) return null;
@@ -41,7 +91,8 @@ export default function Layout() {
         <nav className="flex-1 overflow-y-auto">
           <ul className="space-y-1 p-2">
             {menuItems.map((item) => {
-              if (item.adminOnly && user?.role !== 'admin') return null;
+              if (item.adminOnly && user?.rol !== "ADMIN") return null;
+
               const isActive = location.pathname === item.path;
               return (
                 <li key={item.path}>
@@ -49,8 +100,8 @@ export default function Layout() {
                     to={item.path}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-gray-700 text-white'
-                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        ? "bg-gray-700 text-white"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
                     }`}
                   >
                     <i className={`bi ${item.icon} text-xl`}></i>
@@ -71,10 +122,10 @@ export default function Layout() {
             <div className="flex items-center space-x-3">
               <i className="bi bi-tools text-2xl text-blue-600"></i>
               <h1 className="text-2xl font-semibold text-gray-900">
-                MecaSoft - {user.companyName || 'Taller Mecánico Default'}
+                MecaSoft - {company.nombre || "Taller Mecánico"}
               </h1>
             </div>
-            
+
             {/* User Menu */}
             <div className="relative">
               <button

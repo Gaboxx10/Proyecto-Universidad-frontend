@@ -1,0 +1,40 @@
+{mainPage >= LIMIT && mainOffSet > 1 && (
+                <button
+                  onClick={mainPrev}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                >
+                  <i className="bi bi-chevron-left w-5 h-5"></i>
+                  Previous
+                </button>
+              )}
+
+              {clients.length === LIMIT && hasMore === true && (
+                <button
+                  onClick={mainNext}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                >
+                  Next
+                  <i className="bi bi-chevron-right w-5 h-5"></i>
+                </button>
+              )}
+
+
+              {mainPage >= LIMIT && mainOffSet > 1 && (
+                <button
+                  onClick={mainPrev}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                >
+                  <i className="bi bi-chevron-left w-5 h-5"></i>
+                  Previous
+                </button>
+              )}
+
+              {clients.length === LIMIT && hasMore === true && (
+                <button
+                  onClick={mainNext}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors w-full sm:w-auto"
+                >
+                  Next
+                  <i className="bi bi-chevron-right w-5 h-5"></i>
+                </button>
+              )}

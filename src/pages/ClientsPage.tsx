@@ -4,22 +4,31 @@ import useGetClientSearch from "../hooks/client/useGetClientSearch";
 import useCreateClienteForm from "../hooks/client/useSaveNewClient.hook";
 import useUpdateClienteForm from "../hooks/client/useEditClient.hook";
 import useDeleteClient from "../hooks/client/useDeleteClient.hook";
-import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import { ClipLoader } from "react-spinners";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function ClientsPage() {
   const { user } = useAuthStore();
-
+  const navigate = useNavigate();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState(null);
+
   const [searchTerm, setSearchTerm] = useState("");
+
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientToUpdate, setClientToUpdate] = useState(null);
 
-  const [showSearchResults, setShowSearchResults] = useState(false);
   let debounceTimeout;
+
+  const handleClienteVehiculos = () => {
+    navigate("/dashboard/vehiculos", {
+      state: {
+        cliente: selectedClient.datos.cedula_identidad,
+      },
+    });
+  };
 
   const {
     newClient,
@@ -91,8 +100,7 @@ export default function ClientsPage() {
     if (confirmed) {
       await handleDeleteClient(client.id);
       setSelectedClient(null);
-      setClientToDelete(null);
-      showAlert("Cliente eliminado exitosamente.", "success");
+      showAlert("Cliente eliminado exitosamente 🗑", "success");
     }
   };
 
@@ -101,25 +109,13 @@ export default function ClientsPage() {
     setSearchTerm(value);
 
     clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => {
-      console.log("Buscando con el término:", value);
-    }, 2000);
+    debounceTimeout = setTimeout(() => {}, 4000);
     resetPag();
   };
 
   useEffect(() => {
     if (successUpdate) {
-      setShowEditForm(false);
-      setClientToUpdate(null);
-      setUpdateClient({
-        nombres: "",
-        apellidos: "",
-        cedula_identidad: "",
-        tipo_cliente: "PERSONA_NATURAL",
-        telefono: "",
-        direccion: "",
-        email: "",
-      });
+      handleCloseEditForm();
       refresh();
     }
   }, [successUpdate, setUpdateClient]);
@@ -127,7 +123,9 @@ export default function ClientsPage() {
   useEffect(() => {
     if (successDelete) {
       setSelectedClient(null);
-      setClientToDelete(null);
+      setSearchTerm("");
+      resetPag();
+      refresh();
     }
   }, [successDelete]);
 
@@ -155,10 +153,8 @@ export default function ClientsPage() {
 
   useEffect(() => {
     if (searchTerm === "") {
-      setShowSearchResults(false);
       resetPag();
-    } else {
-      setShowSearchResults(true);
+      refresh();
     }
   }, [searchTerm]);
 
@@ -166,27 +162,26 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800">Clientes</h2>
-        {(user && user.rol === "ADMIN") ||
-          (user.rol === "ADMIN" && (
-            <button
-              onClick={() => {
-                setNewClient({
-                  nombres: "",
-                  apellidos: "",
-                  cedula_identidad: "",
-                  tipo_cliente: "PERSONA_NATURAL",
-                  telefono: "",
-                  direccion: "",
-                  email: "",
-                });
-                setShowAddForm(true);
-              }}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              <i className="bi bi-plus-lg me-2"></i>
-              Nuevo Cliente
-            </button>
-          ))}
+        {user && (user.rol === "ADMIN" || user.rol === "ASISTENTE") && (
+          <button
+            onClick={() => {
+              setNewClient({
+                nombres: "",
+                apellidos: "",
+                cedula_identidad: "",
+                tipo_cliente: "PERSONA_NATURAL",
+                telefono: "",
+                direccion: "",
+                email: "",
+              });
+              setShowAddForm(true);
+            }}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            <i className="bi bi-plus-lg me-2"></i>
+            Nuevo Cliente
+          </button>
+        )}
       </div>
 
       <div className="flex items-center space-x-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -200,141 +195,9 @@ export default function ClientsPage() {
         />
       </div>
 
-      {showEditForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Actualizar Cliente</h3>
-              <button
-                onClick={handleCloseEditForm}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <i className="bi bi-x-lg"></i>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitUpdate} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  {newClient.tipo_cliente === "PERSONA_NATURAL"
-                    ? "Cédula"
-                    : "RIF"}
-                </label>
-                <input
-                  type="text"
-                  name="cedula_identidad"
-                  value={updateClient.cedula_identidad}
-                  onChange={handleChangeUpdate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  {updateClient.tipo_cliente === "PERSONA_NATURAL"
-                    ? "Nombres"
-                    : "Nombre de la Empresa"}
-                </label>
-                <input
-                  type="text"
-                  name="nombres"
-                  value={updateClient.nombres}
-                  onChange={handleChangeUpdate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  {updateClient.tipo_cliente === "PERSONA_NATURAL"
-                    ? "Apellidos"
-                    : "Razón Social"}
-                </label>
-                <input
-                  type="text"
-                  name="apellidos"
-                  value={updateClient.apellidos}
-                  onChange={handleChangeUpdate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  name="telefono"
-                  value={updateClient.telefono}
-                  onChange={handleChangeUpdate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Dirección
-                </label>
-                <textarea
-                  name="direccion"
-                  value={updateClient.direccion}
-                  onChange={handleChangeUpdate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Correo Electrónico
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={updateClient.email}
-                  onChange={handleChangeUpdate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEditForm(false);
-                    setNewClient({
-                      nombres: "",
-                      apellidos: "",
-                      cedula_identidad: "",
-                      tipo_cliente: "PERSONA_NATURAL",
-                      telefono: "",
-                      direccion: "",
-                      email: "",
-                    });
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
-                >
-                  {isLoadingUpdate ? "Actualizando..." : "Actualizar Cliente"}
-                </button>
-              </div>
-            </form>
-
-            {errorUpdate && showAlert(`${errorUpdate}`, "error")}
-          </div>
-        </div>
-      )}
-
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Crear Cliente</h3>
               <button
@@ -356,104 +219,92 @@ export default function ClientsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmitCreate} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Tipo de Cliente
-                </label>
-                <select
-                  name="tipo_cliente"
-                  value={newClient.tipo_cliente}
-                  onChange={handleChangeCreate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="PERSONA_NATURAL">Persona Natural</option>
-                  <option value="EMPRESA">Empresa</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  {newClient.tipo_cliente === "PERSONA_NATURAL"
-                    ? "Cédula"
-                    : "RIF"}
-                </label>
-                <input
-                  type="text"
-                  name="cedula_identidad"
-                  value={newClient.cedula_identidad}
-                  onChange={handleChangeCreate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  {newClient.tipo_cliente === "PERSONA_NATURAL"
-                    ? "Nombres"
-                    : "Nombre de la Empresa"}
-                </label>
-                <input
-                  type="text"
-                  name="nombres"
-                  value={newClient.nombres}
-                  onChange={handleChangeCreate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  {newClient.tipo_cliente === "PERSONA_NATURAL"
-                    ? "Apellidos"
-                    : "Razón Social"}
-                </label>
-                <input
-                  type="text"
-                  name="apellidos"
-                  value={newClient.apellidos}
-                  onChange={handleChangeCreate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  name="telefono"
-                  value={newClient.telefono}
-                  onChange={handleChangeCreate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Dirección
-                </label>
-                <textarea
-                  name="direccion"
-                  value={newClient.direccion}
-                  onChange={handleChangeCreate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Correo Electrónico
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={newClient.email}
-                  onChange={handleChangeCreate}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
+            <form onSubmit={handleSubmitCreate} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {newClient.tipo_cliente === "PERSONA_NATURAL"
+                      ? "Cédula"
+                      : "RIF"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    name="cedula_identidad"
+                    value={newClient.cedula_identidad}
+                    onChange={handleChangeCreate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {newClient.tipo_cliente === "PERSONA_NATURAL"
+                      ? "Nombres"
+                      : "Nombre de la Empresa"}
+                  </label>
+                  <input
+                    type="text"
+                    name="nombres"
+                    required
+                    value={newClient.nombres}
+                    onChange={handleChangeCreate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {newClient.tipo_cliente === "PERSONA_NATURAL"
+                      ? "Apellidos"
+                      : "Razón Social"}
+                  </label>
+                  <input
+                    type="text"
+                    name="apellidos"
+                    required
+                    value={newClient.apellidos}
+                    onChange={handleChangeCreate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    required
+                    value={newClient.telefono}
+                    onChange={handleChangeCreate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Dirección
+                  </label>
+                  <textarea
+                    name="direccion"
+                    value={newClient.direccion}
+                    required
+                    onChange={handleChangeCreate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    value={newClient.email}
+                    onChange={handleChangeCreate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end space-x-3 mt-6">
@@ -490,43 +341,186 @@ export default function ClientsPage() {
         </div>
       )}
 
+      {showEditForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Actualizar Cliente</h3>
+              <button
+                onClick={handleCloseEditForm}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitUpdate} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {updateClient.tipo_cliente === "PERSONA_NATURAL"
+                      ? "Cédula"
+                      : "RIF"}
+                  </label>
+                  <input
+                    type="text"
+                    name="cedula_identidad"
+                    value={updateClient.cedula_identidad}
+                    onChange={handleChangeUpdate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {updateClient.tipo_cliente === "PERSONA_NATURAL"
+                      ? "Nombres"
+                      : "Nombre de la Empresa"}
+                  </label>
+                  <input
+                    type="text"
+                    name="nombres"
+                    value={updateClient.nombres}
+                    onChange={handleChangeUpdate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {updateClient.tipo_cliente === "PERSONA_NATURAL"
+                      ? "Apellidos"
+                      : "Razón Social"}
+                  </label>
+                  <input
+                    type="text"
+                    name="apellidos"
+                    value={updateClient.apellidos}
+                    onChange={handleChangeUpdate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={updateClient.telefono}
+                    onChange={handleChangeUpdate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Dirección
+                  </label>
+                  <textarea
+                    name="direccion"
+                    value={updateClient.direccion}
+                    onChange={handleChangeUpdate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={updateClient.email}
+                    onChange={handleChangeUpdate}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handleCloseEditForm}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-md"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                >
+                  {isLoadingUpdate ? "Actualizando..." : "Actualizar Cliente"}
+                </button>
+              </div>
+            </form>
+
+            {errorUpdate && showAlert(`${errorUpdate}`, "error")}
+          </div>
+        </div>
+      )}
+
       <>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
                     Cédula/RIF
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
                     Nombre
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
                     Teléfono
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
                     Correo
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
+                {clienteSearch.length === 0 && !isLoadingSearch && (
+                  <tr className="text-center">
+                    <td colSpan={6} className="px-6 py-4 text-sm text-gray-500">
+                      <div className="py-4 px-6 text-lg font-medium text-gray-500">
+                        No se encontraron clientes
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {isLoadingSearch && (
+                  <tr>
+                    <td colSpan={4} className="px-6 text-center py-4">
+                      <ClipLoader
+                        color="#3498db"
+                        loading={isLoadingSearch}
+                        size={50}
+                      />
+                    </td>
+                  </tr>
+                )}
                 {clienteSearch.map((client) => (
                   <tr
                     key={client.id}
                     onClick={() => setSelectedClient(client)}
                     className="hover:bg-gray-50 cursor-pointer"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap  text-center text-sm font-medium text-gray-900">
                       {client.datos.cedula_id_detalles}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap  text-center text-sm text-gray-500">
                       {client.datos.nombres} {client.datos.apellidos}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap  text-center text-sm text-gray-500">
                       {client.datos.telefono}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap  text-center text-sm text-gray-500">
                       {client.datos.email || "-"}
                     </td>
                   </tr>
@@ -629,15 +623,13 @@ export default function ClientsPage() {
 
             <div className="flex justify-between mt-6">
               <div className="space-x-3">
-                <Link to="/dashboard/vehiculos">
-                  <button
-                    onClick={() => {}}
-                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 border border-blue-600 rounded-md"
-                  >
-                    <i className="bi bi-car-front me-2"></i>
-                    Vehículos Asociados
-                  </button>
-                </Link>
+                <button
+                  onClick={handleClienteVehiculos}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 border border-blue-600 rounded-md"
+                >
+                  <i className="bi bi-car-front me-2"></i>
+                  Vehículos Asociados
+                </button>
 
                 <Link to="/dashboard/facturas">
                   <button
@@ -649,22 +641,24 @@ export default function ClientsPage() {
                   </button>
                 </Link>
               </div>
-              <div className="space-x-3">
-                <button
-                  onClick={() => handleEdit(selectedClient)}
-                  className="px-4 py-2 text-sm font-medium text-yellow-600 hover:bg-yellow-50 border border-yellow-600 rounded-md"
-                >
-                  <i className="bi bi-pencil me-2"></i>
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(selectedClient)}
-                  className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 border border-red-600 rounded-md"
-                >
-                  <i className="bi bi-trash me-2"></i>
-                  {isLoadingDelete ? "Eliminando..." : "Eliminar"}
-                </button>
-              </div>
+              {user && (user.rol === "ADMIN" || user.rol === "ASISTENTE") && (
+                <div className="space-x-3">
+                  <button
+                    onClick={() => handleEdit(selectedClient)}
+                    className="px-4 py-2 text-sm font-medium text-yellow-600 hover:bg-yellow-50 border border-yellow-600 rounded-md"
+                  >
+                    <i className="bi bi-pencil me-2"></i>
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(selectedClient)}
+                    className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 border border-red-600 rounded-md"
+                  >
+                    <i className="bi bi-trash me-2"></i>
+                    {isLoadingDelete ? "Eliminando..." : "Eliminar"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

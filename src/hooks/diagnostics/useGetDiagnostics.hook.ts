@@ -1,20 +1,19 @@
-import { useState, useEffect } from "react";
 import axios from "axios";
+import { useEffect, useState } from "react";
 import { usePagination } from "../usePagination.hook";
 
-const useGetClientSearch = (searchTerm) => {
-  const [clienteSearch, setClienteSearch] = useState([]);
-  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
-  const [errorSearch, setErrorSearch] = useState(null);
+const useGetDiagnostic = (searchTerm) => {
+  const [diagnosticSearch, setDiagnosticSearch] = useState([]);
+  const [isLoadingDiagnostic, setIsLoadingDiagnostic] = useState(false);
+  const [errorDiagnostic, setErrorDiagnostic] = useState(null);
   const [hasMore, setHasMore] = useState(true);
 
   const { pagOffSet, page, next, prev, resetPag, LIMIT } = usePagination();
 
   const refresh = async () => {
-    setIsLoadingSearch(true);
     try {
       const response = await axios.get(
-        `http://localhost:3000/client/clients/search/`,
+        "http://localhost:3000/diagnostic/diagnostics/search/",
         {
           params: {
             search: searchTerm,
@@ -25,8 +24,10 @@ const useGetClientSearch = (searchTerm) => {
           },
         }
       );
-      const clients = response.data.data;
-      const totalClients = response.data.totalCount;
+      const diagnostics = response.data.data;
+      const totalDiagnostics = response.data.totalCount;
+
+      //console.log("response", response);
 
       if (response.data.statusCode !== 200) {
         throw new Error(
@@ -34,15 +35,15 @@ const useGetClientSearch = (searchTerm) => {
         );
       }
 
-      if (page >= totalClients) {
+      if (page >= totalDiagnostics) {
         setHasMore(false);
       } else {
         setHasMore(true);
       }
 
-      setClienteSearch(clients);
+      setDiagnosticSearch(diagnostics);
     } catch (err) {
-      setErrorSearch(
+      setErrorDiagnostic(
         err.response?.data?.message ||
           err.response?.message ||
           err.message ||
@@ -50,7 +51,7 @@ const useGetClientSearch = (searchTerm) => {
           "Hubo un error al enviar los datos"
       );
     } finally {
-      setIsLoadingSearch(false);
+      setIsLoadingDiagnostic(false);
     }
   };
 
@@ -59,11 +60,12 @@ const useGetClientSearch = (searchTerm) => {
   }, [searchTerm, pagOffSet]);
 
   return {
-    clienteSearch,
-    isLoadingSearch,
-    errorSearch,
-    pagOffSet,
+    diagnosticSearch,
+    isLoadingDiagnostic,
+    errorDiagnostic,
+
     resetPag,
+    pagOffSet,
     next,
     prev,
     LIMIT,
@@ -72,4 +74,5 @@ const useGetClientSearch = (searchTerm) => {
     refresh,
   };
 };
-export default useGetClientSearch;
+
+export default useGetDiagnostic;

@@ -126,14 +126,14 @@ export default function Layout() {
               </h1>
             </div>
 
-            {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center space-x-3 focus:outline-none"
               >
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <i className="bi bi-person text-gray-600"></i>
+                <i className="bi bi-person-circle "></i>
+                
                 </div>
                 <span className="text-gray-700">{user.nombre}</span>
               </button>

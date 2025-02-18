@@ -2,20 +2,20 @@ import axios from "axios";
 import { useState } from "react";
 import { showAlert } from "../../utils/alerts";
 
-const useDeleteClient = () => {
-  const [deleteClient, setDeleteClient] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorDelete, setErrorDelete] = useState(null);
+const useDeleteDiagnostic = () => {
+  const [deleteDiagnostic, setDeleteDiagnostic] = useState(null);
+  const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [successDelete, setSuccessDelete] = useState(false);
+  const [errorDelete, setErrorDelete] = useState(null);
 
-  const handleDeleteClient = async (id) => {
-    setIsLoading(true);
-    setErrorDelete(null); 
-    setSuccessDelete(false); 
+  const handleDeleteDiagnostic = async (id) => {
+    setIsLoadingDelete(true);
+    setSuccessDelete(false);
+    setErrorDelete(null);
 
     try {
       const response = await axios.delete(
-        `http://localhost:3000/client/clients/id/${id}/delete`,
+        `http://localhost:3000/diagnostic/diagnostics/id/${id}/delete`,
         {
           headers: {
             Authorization: "Bearer " + localStorage.getItem("token"),
@@ -30,29 +30,29 @@ const useDeleteClient = () => {
       }
 
       setSuccessDelete(true);
-      setDeleteClient(true);
+      setDeleteDiagnostic(true);
+      showAlert("Cliente eliminado exitosamente", "success");
     } catch (error) {
       setErrorDelete(
         error.response?.data?.message ||
           error.message ||
           "Hubo un error al enviar los datos"
       );
-
       setTimeout(() => {
         setErrorDelete(null);
       }, 5000);
     } finally {
-      setIsLoading(false);
+      setIsLoadingDelete(false);
     }
   };
 
   return {
-    deleteClient,
-    isLoadingDelete: isLoading,
+    deleteDiagnostic,
+    isLoadingDelete,
     errorDelete,
     successDelete,
-    handleDeleteClient,
+    handleDeleteDiagnostic,
   };
 };
 
-export default useDeleteClient;
+export default useDeleteDiagnostic;

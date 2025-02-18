@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import useGetDiagnostic from "../hooks/diagnostics/useGetDiagnostics.hook";
+import usePrintDiagnostic from "../hooks/diagnostics/usePrintDiagnostic.hook";
+import { showAlert, showConfirmDialog } from "../utils/alerts";
+import { ClipLoader } from "react-spinners";
+import useDeleteDiagnostic from "../hooks/diagnostics/useDeleteDiagnostic.hook";
+import useCreateDiagnosticForm from "../hooks/diagnostics/useCreateDiagnostic.hook";
 
 interface Observation {
   id: string;
@@ -32,142 +38,99 @@ interface Diagnostic {
 export default function DiagnosticsPage() {
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDiagnostic, setSelectedDiagnostic] = useState<Diagnostic | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [newDiagnostic, setNewDiagnostic] = useState({
-    vehiclePlate: '',
-    observations: [{ id: '1', description: '', probableCause: '', solution: '' }]
-  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDiagnostic, setSelectedDiagnostic] = useState(null);
 
-  const itemsPerPage = 5;
+  const {
+    newDiagnostic,
+    setNewDiagnostic,
+    handleSubmitCreate,
+    handleChangeCreate,
+    errorCreate,
+    isLoadingCreate,
+    successCreate,
+
+    addNewObservation,
+    updateObservation,
+    deleteObservation,
+  } = useCreateDiagnosticForm();
+
+  let debounceTimeout;
+
+  const {
+    diagnosticSearch,
+    isLoadingDiagnostic,
+    errorDiagnostic,
+    resetPag,
+    pagOffSet,
+    next,
+    prev,
+    LIMIT,
+    page,
+    hasMore,
+    refresh,
+  } = useGetDiagnostic(searchTerm);
+
+  const {
+    deleteDiagnostic,
+    isLoadingDelete,
+    errorDelete,
+    successDelete,
+    handleDeleteDiagnostic,
+  } = useDeleteDiagnostic();
+
+  const { printDiagnostic } = usePrintDiagnostic();
+
+  const handleSearchInput = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+      console.log("Buscando con el término:", value);
+    }, 4000);
+    resetPag();
+  };
+
+  const handleDelete = async (diagnostic) => {
+    const confirmed = await showConfirmDialog(
+      "¿Estás seguro de que deseas eliminar este diagnóstico? Esta acción no se puede deshacer"
+    );
+    if (confirmed) {
+      await handleDeleteDiagnostic(diagnostic.id);
+      setSelectedDiagnostic(null);
+      showAlert("Diagnóstico eliminado exitosamente 🗑", "success");
+    }
+  };
+
+  const handlePrint = (diagnostic) => {
+    printDiagnostic(diagnostic);
+  };
+
 
   useEffect(() => {
-    // Simular carga de datos
-    const mockDiagnostics: Diagnostic[] = [
-      {
-        id: '1',
-        date: '2024-03-15',
-        vehiclePlate: 'ABC123',
-        observations: [
-          {
-            id: '1',
-            description: 'Ruido en suspensión delantera',
-            probableCause: 'Amortiguadores desgastados',
-            solution: 'Reemplazo de amortiguadores delanteros'
-          }
-        ],
-        vehicle: {
-          id: '1',
-          plate: 'ABC123',
-          brand: 'Toyota',
-          model: 'Corolla',
-          year: 2020,
-          color: 'Plata',
-          client: {
-            id: '1',
-            firstName: 'Juan',
-            lastName: 'Pérez',
-            identityDoc: 'V12345678',
-            phone: '0414-1234567'
-          }
-        }
-      }
-    ];
-    setDiagnostics(mockDiagnostics);
-    setTotalPages(Math.ceil(mockDiagnostics.length / itemsPerPage));
-  }, []);
+    if (successCreate) {
+      setShowAddForm(false);
+      setSearchTerm("");
+      resetPag();
+      refresh();
+    }
+  }, [successCreate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const diagnosticId = Math.random().toString(36).substr(2, 9);
-    const mockVehicle = {
-      id: '1',
-      plate: newDiagnostic.vehiclePlate,
-      brand: 'Toyota',
-      model: 'Corolla',
-      year: 2020,
-      color: 'Plata',
-      client: {
-        id: '1',
-        firstName: 'Juan',
-        lastName: 'Pérez',
-        identityDoc: 'V12345678',
-        phone: '0414-1234567'
-      }
-    };
-
-    const newDiagnosticEntry: Diagnostic = {
-      id: diagnosticId,
-      date: new Date().toISOString().split('T')[0],
-      vehiclePlate: newDiagnostic.vehiclePlate,
-      observations: newDiagnostic.observations,
-      vehicle: mockVehicle
-    };
-
-    setDiagnostics([newDiagnosticEntry, ...diagnostics]);
-    setShowAddForm(false);
-    setNewDiagnostic({
-      vehiclePlate: '',
-      observations: [{ id: '1', description: '', probableCause: '', solution: '' }]
-    });
-  };
-
-  const handleDelete = (id: string) => {
-    if (window.confirm('¿Está seguro de eliminar este diagnóstico?')) {
-      setDiagnostics(diagnostics.filter(diagnostic => diagnostic.id !== id));
+  useEffect(() => {
+    if (successDelete) {
       setSelectedDiagnostic(null);
+      setSearchTerm("");
+      resetPag();
+      refresh();
     }
-  };
+  }, [successDelete]);
 
-  const addObservation = () => {
-    setNewDiagnostic({
-      ...newDiagnostic,
-      observations: [
-        ...newDiagnostic.observations,
-        {
-          id: Math.random().toString(36).substr(2, 9),
-          description: '',
-          probableCause: '',
-          solution: ''
-        }
-      ]
-    });
-  };
-
-  const updateObservation = (index: number, field: keyof Observation, value: string) => {
-    const updatedObservations = [...newDiagnostic.observations];
-    updatedObservations[index] = {
-      ...updatedObservations[index],
-      [field]: value
-    };
-    setNewDiagnostic({
-      ...newDiagnostic,
-      observations: updatedObservations
-    });
-  };
-
-  const removeObservation = (index: number) => {
-    if (newDiagnostic.observations.length > 1) {
-      const updatedObservations = newDiagnostic.observations.filter((_, i) => i !== index);
-      setNewDiagnostic({
-        ...newDiagnostic,
-        observations: updatedObservations
-      });
+  useEffect(() => {
+    if (searchTerm === "") {
+      resetPag();
     }
-  };
-
-  const filteredDiagnostics = diagnostics
-    .filter(diagnostic =>
-      diagnostic.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => a.vehiclePlate.localeCompare(b.vehiclePlate));
-
-  const paginatedDiagnostics = filteredDiagnostics.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  }, [searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -188,8 +151,8 @@ export default function DiagnosticsPage() {
           type="text"
           placeholder="Buscar por placa..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 border-none focus:ring-0 text-sm"
+          onChange={handleSearchInput}
+          className="flex-1 border-none focus:ring-0 text-sm outline-none "
         />
       </div>
 
@@ -205,84 +168,111 @@ export default function DiagnosticsPage() {
                 <i className="bi bi-x-lg"></i>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmitCreate} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Placa del Vehículo
                 </label>
                 <input
                   type="text"
+                  name="placa_vehiculo"
                   required
-                  value={newDiagnostic.vehiclePlate}
-                  onChange={(e) => setNewDiagnostic({ ...newDiagnostic, vehiclePlate: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  value={newDiagnostic.placa_vehiculo}
+                  onChange={handleChangeCreate}
+                  className="mt-1 block w-80 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-md font-medium text-gray-700">Observaciones</h4>
-                  <button
-                    type="button"
-                    onClick={addObservation}
-                    className="flex items-center px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 border border-blue-600 rounded-md"
-                  >
-                    <i className="bi bi-plus-lg me-1"></i>
-                    Agregar Observación
-                  </button>
-                </div>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 text-center uppercase">
+                        Descripción
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 text-center uppercase">
+                        Causa Probable
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 text-center uppercase">
+                        Solución
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 text-center uppercase"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {newDiagnostic.observaciones.map((observation, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4">
+                          <input
+                            type="text"
+                            value={observation.observacion}
+                            onChange={(e) =>
+                              updateObservation(
+                                index,
+                                "observacion",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Descripción"
+                            className="w-full border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500 text-center outline-none "
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <input
+                            type="text"
+                            value={observation.causa_prob}
+                            onChange={(e) =>
+                              updateObservation(
+                                index,
+                                "causa_prob",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Causa Probable"
+                            className="w-full border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500 text-center outline-none "
+                          />
+                        </td>
+                        <td className="px-6 py-4">
+                          <input
+                            type="text"
+                            value={observation.solucion}
+                            onChange={(e) =>
+                              updateObservation(
+                                index,
+                                "solucion",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Solución"
+                            className="w-full border-gray-300 rounded-md focus:border-blue-500 focus:ring-blue-500 text-center outline-none "
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {newDiagnostic.observaciones.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => deleteObservation(index)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <i className="bi bi-trash"></i> Eliminar
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-                {newDiagnostic.observations.map((observation, index) => (
-                  <div key={observation.id} className="bg-gray-50 p-4 rounded-lg relative">
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => removeObservation(index)}
-                        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                      >
-                        <i className="bi bi-trash"></i>
-                      </button>
-                    )}
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Descripción
-                        </label>
-                        <textarea
-                          required
-                          value={observation.description}
-                          onChange={(e) => updateObservation(index, 'description', e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          rows={2}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Causa Probable
-                        </label>
-                        <textarea
-                          required
-                          value={observation.probableCause}
-                          onChange={(e) => updateObservation(index, 'probableCause', e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          rows={2}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Solución
-                        </label>
-                        <textarea
-                          required
-                          value={observation.solution}
-                          onChange={(e) => updateObservation(index, 'solution', e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          rows={2}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={addNewObservation}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 border border-blue-600 rounded-md"
+                >
+                  <i className="bi bi-plus-lg me-2"></i>
+                  Agregar Observación
+                </button>
               </div>
 
               <div className="flex justify-end space-x-3">
@@ -297,10 +287,11 @@ export default function DiagnosticsPage() {
                   type="submit"
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
                 >
-                  Guardar
+                  {isLoadingCreate ? "Guardando..." : "Guardar Diagnóstico"}
                 </button>
               </div>
             </form>
+            {errorCreate && showAlert(`${errorCreate}`, "error")}
           </div>
         </div>
       )}
@@ -310,75 +301,102 @@ export default function DiagnosticsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
+                  Nº
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
                   Fecha
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
                   Placa
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
                   Vehículo
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
+                  Observaciones
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider  text-center">
                   Cliente
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedDiagnostics.map((diagnostic) => (
+              {diagnosticSearch.length === 0 && !isLoadingDiagnostic && (
+                <tr className="text-center">
+                  <td colSpan={8} className="px-6 py-4 text-sm text-gray-500">
+                    <div className="py-4 px-6 text-lg font-medium text-gray-500">
+                      No se encontraron diagnósticos
+                    </div>
+                  </td>
+                </tr>
+              )}
+
+              {isLoadingDiagnostic && (
+                <tr>
+                  <td colSpan={8} className="px-6 text-center py-4">
+                    <ClipLoader
+                      color="#3498db"
+                      loading={isLoadingDiagnostic}
+                      size={50}
+                    />
+                  </td>
+                </tr>
+              )}
+              {diagnosticSearch.map((diagnostic) => (
                 <tr
                   key={diagnostic.id}
                   onClick={() => setSelectedDiagnostic(diagnostic)}
                   className="hover:bg-gray-50 cursor-pointer"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {diagnostic.date}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500  text-center">
+                    {diagnostic.num_diagnostico}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {diagnostic.vehiclePlate}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500  text-center">
+                    {new Date(diagnostic.created_at).toLocaleDateString(
+                      "es-ES"
+                    )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {diagnostic.vehicle.brand} {diagnostic.vehicle.model}
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900  text-center">
+                    {diagnostic.vehiculo.placa}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {diagnostic.vehicle.client.firstName} {diagnostic.vehicle.client.lastName}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500  text-center">
+                    {diagnostic.vehiculo.marca} {diagnostic.vehiculo.modelo}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center  text-center">
+                    {diagnostic.revisiones.length}
+                  </td>
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500  text-center">
+                    {diagnostic.vehiculo.cliente.datos.nombres}{" "}
+                    {diagnostic.vehiculo.cliente.datos.apellidos}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
 
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center px-6 py-3 border-t border-gray-200">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-3 py-1 text-sm font-medium rounded-md ${
-                currentPage === 1
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-blue-600 hover:bg-blue-50'
-              }`}
-            >
-              <i className="bi bi-chevron-left me-1"></i>
-              Anterior
-            </button>
-            <span className="text-sm text-gray-700">
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1 text-sm font-medium rounded-md ${
-                currentPage === totalPages
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-blue-600 hover:bg-blue-50'
-              }`}
-            >
-              Siguiente
-              <i className="bi bi-chevron-right ms-1"></i>
-            </button>
-          </div>
+      <div className="flex justify-center items-center gap-4">
+        {page >= LIMIT && pagOffSet > 1 && (
+          <button
+            onClick={prev}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors w-full sm:w-auto"
+          >
+            <i className="bi bi-chevron-left w-5 h-5"></i>
+            Previous
+          </button>
+        )}
+        {diagnosticSearch.length === LIMIT && hasMore === true && (
+          <button
+            onClick={next}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors w-full sm:w-auto"
+          >
+            Next
+            <i className="bi bi-chevron-right w-5 h-5"></i>
+          </button>
         )}
       </div>
 
@@ -394,66 +412,113 @@ export default function DiagnosticsPage() {
 
             <div className="space-y-6">
               <h3 className="text-xl font-semibold text-gray-900">
-                Diagnóstico - {selectedDiagnostic.date}
+                Diagnóstico N° {selectedDiagnostic.num_diagnostico}
               </h3>
+              <span>
+                {new Date(selectedDiagnostic.created_at).toLocaleDateString(
+                  "es-ES"
+                )}
+              </span>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Información del Vehículo</h4>
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">
+                    Información del Vehículo
+                  </h4>
                   <div className="space-y-2">
-                    <p><span className="font-medium">Placa:</span> {selectedDiagnostic.vehicle.plate}</p>
-                    <p><span className="font-medium">Marca:</span> {selectedDiagnostic.vehicle.brand}</p>
-                    <p><span className="font-medium">Modelo:</span> {selectedDiagnostic.vehicle.model}</p>
-                    <p><span className="font-medium">Año:</span> {selectedDiagnostic.vehicle.year}</p>
-                    <p><span className="font-medium">Color:</span> {selectedDiagnostic.vehicle.color}</p>
+                    <p>
+                      <span className="font-medium">Placa:</span>{" "}
+                      {selectedDiagnostic.vehiculo.placa}
+                    </p>
+                    <p>
+                      <span className="font-medium">Marca:</span>{" "}
+                      {selectedDiagnostic.vehiculo.marca}
+                    </p>
+                    <p>
+                      <span className="font-medium">Modelo:</span>{" "}
+                      {selectedDiagnostic.vehiculo.modelo}
+                    </p>
+                    <p>
+                      <span className="font-medium">Año:</span>{" "}
+                      {selectedDiagnostic.vehiculo.año}
+                    </p>
+                    <p>
+                      <span className="font-medium">Color:</span>{" "}
+                      {selectedDiagnostic.vehiculo.color}
+                    </p>
                   </div>
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Información del Cliente</h4>
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">
+                    Información del Cliente
+                  </h4>
                   <div className="space-y-2">
                     <p>
-                      <span className="font-medium">Nombre:</span>{' '}
-                      {selectedDiagnostic.vehicle.client.firstName} {selectedDiagnostic.vehicle.client.lastName}
+                      <span className="font-medium">Nombre:</span>{" "}
+                      {selectedDiagnostic.vehiculo.cliente.datos.nombres}{" "}
+                      {selectedDiagnostic.vehiculo.cliente.datos.apellidos}
                     </p>
                     <p>
-                      <span className="font-medium">Cédula/RIF:</span>{' '}
-                      {selectedDiagnostic.vehicle.client.identityDoc}
+                      <span className="font-medium">Cédula/RIF:</span>{" "}
+                      {
+                        selectedDiagnostic.vehiculo.cliente.datos
+                          .cedula_id_detalles
+                      }
                     </p>
                     <p>
-                      <span className="font-medium">Teléfono:</span>{' '}
-                      {selectedDiagnostic.vehicle.client.phone}
+                      <span className="font-medium">Teléfono:</span>{" "}
+                      {selectedDiagnostic.vehiculo.cliente.datos.telefono}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-lg font-medium text-gray-900">Observaciones</h4>
-                {selectedDiagnostic.observations.map((observation, index) => (
-                  <div key={observation.id} className="bg-gray-50 p-4 rounded-lg space-y-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Descripción</p>
-                      <p className="mt-1">{observation.description}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Causa Probable</p>
-                      <p className="mt-1">{observation.probableCause}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">Solución</p>
-                      <p className="mt-1">{observation.solution}</p>
-                    </div>
-                  </div>
-                ))}
+                <h4 className="text-lg font-medium text-gray-900">
+                  Observaciones
+                </h4>
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 text-center uppercase">
+                          Descripción
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 text-center uppercase">
+                          Causa Probable
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 text-center uppercase">
+                          Solución
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200 text-center">
+                      {selectedDiagnostic.revisiones.map(
+                        (observation, index) => (
+                          <tr key={observation.id}>
+                            <td className="px-6 py-4">
+                              {observation.observacion}
+                            </td>
+                            <td className="px-6 py-4">
+                              {observation.causa_prob}
+                            </td>
+                            <td className="px-6 py-4">
+                              {observation.solucion}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <div className="flex justify-between mt-6">
                 <div className="space-x-3">
                   <button
                     onClick={() => {
-                      // Implement PDF export
-                      window.alert('Exportando diagnóstico a PDF...');
+                      handlePrint(selectedDiagnostic);
                     }}
                     className="px-4 py-2 text-sm font-medium text-green-600 hover:bg-green-50 border border-green-600 rounded-md"
                   >
@@ -463,14 +528,7 @@ export default function DiagnosticsPage() {
                 </div>
                 <div className="space-x-3">
                   <button
-                    onClick={() => {/* Implementar edición */}}
-                    className="px-4 py-2 text-sm font-medium text-yellow-600 hover:bg-yellow-50 border border-yellow-600 rounded-md"
-                  >
-                    <i className="bi bi-pencil me-2"></i>
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(selectedDiagnostic.id)}
+                    onClick={() => handleDelete(selectedDiagnostic)}
                     className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 border border-red-600 rounded-md"
                   >
                     <i className="bi bi-trash me-2"></i>

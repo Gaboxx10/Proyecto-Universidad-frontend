@@ -2,20 +2,20 @@ import axios from "axios";
 import { useState } from "react";
 import { showAlert } from "../../utils/alerts";
 
-const useDeleteClient = () => {
-  const [deleteClient, setDeleteClient] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+const useDeleteVehicle = () => {
+  const [deleteVehicle, setDeleteVehicle] = useState(null);
+  const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [errorDelete, setErrorDelete] = useState(null);
   const [successDelete, setSuccessDelete] = useState(false);
 
-  const handleDeleteClient = async (id) => {
-    setIsLoading(true);
-    setErrorDelete(null); 
-    setSuccessDelete(false); 
+  const handleDeleteVehicle = async (id) => {
+    setIsLoadingDelete(true);
+    setErrorDelete(null);
+    setSuccessDelete(false);
 
     try {
       const response = await axios.delete(
-        `http://localhost:3000/client/clients/id/${id}/delete`,
+        `http://localhost:3000/vehicle/vehicles/id/${id}/delete`,
         {
           headers: {
             Authorization: "Bearer " + localStorage.getItem("token"),
@@ -30,7 +30,7 @@ const useDeleteClient = () => {
       }
 
       setSuccessDelete(true);
-      setDeleteClient(true);
+      setDeleteVehicle(true);
     } catch (error) {
       setErrorDelete(
         error.response?.data?.message ||
@@ -42,17 +42,17 @@ const useDeleteClient = () => {
         setErrorDelete(null);
       }, 5000);
     } finally {
-      setIsLoading(false);
+      setIsLoadingDelete(false);
     }
   };
 
   return {
-    deleteClient,
-    isLoadingDelete: isLoading,
+    deleteVehicle,
+    isLoadingDelete,
     errorDelete,
     successDelete,
-    handleDeleteClient,
+    handleDeleteVehicle,
   };
 };
 
-export default useDeleteClient;
+export default useDeleteVehicle;

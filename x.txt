@@ -38,3 +38,94 @@
                   <i className="bi bi-chevron-right w-5 h-5"></i>
                 </button>
               )}
+
+
+
+
+
+
+
+
+
+
+
+
+              
+    const newDiagnosticEntry: Diagnostic = {
+      id: diagnosticId,
+      date: new Date().toISOString().split("T")[0],
+      vehiclePlate: newDiagnostic.vehiclePlate,
+      observations: newDiagnostic.observations,
+      vehicle: mockVehicle,
+    };
+
+    setDiagnostics([newDiagnosticEntry, ...diagnostics]);
+    setShowAddForm(false);
+    setNewDiagnostic({
+      vehiclePlate: "",
+      observations: [
+        { id: "1", description: "", probableCause: "", solution: "" },
+      ],
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("¿Está seguro de eliminar este diagnóstico?")) {
+      setDiagnostics(diagnostics.filter((diagnostic) => diagnostic.id !== id));
+      setSelectedDiagnostic(null);
+    }
+  };
+
+  const addObservation = () => {
+    setNewDiagnostic({
+      ...newDiagnostic,
+      observations: [
+        ...newDiagnostic.observations,
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          description: "",
+          probableCause: "",
+          solution: "",
+        },
+      ],
+    });
+  };
+
+  const updateObservation = (
+    index: number,
+    field: keyof Observation,
+    value: string
+  ) => {
+    const updatedObservations = [...newDiagnostic.observations];
+    updatedObservations[index] = {
+      ...updatedObservations[index],
+      [field]: value,
+    };
+    setNewDiagnostic({
+      ...newDiagnostic,
+      observations: updatedObservations,
+    });
+  };
+
+  const removeObservation = (index: number) => {
+    if (newDiagnostic.observations.length > 1) {
+      const updatedObservations = newDiagnostic.observations.filter(
+        (_, i) => i !== index
+      );
+      setNewDiagnostic({
+        ...newDiagnostic,
+        observations: updatedObservations,
+      });
+    }
+  };
+
+  const filteredDiagnostics = diagnostics
+    .filter((diagnostic) =>
+      diagnostic.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => a.vehiclePlate.localeCompare(b.vehiclePlate));
+
+  const paginatedDiagnostics = filteredDiagnostics.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );

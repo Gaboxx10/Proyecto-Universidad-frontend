@@ -2,14 +2,17 @@ import axios from "axios";
 import { useState } from "react";
 import { showAlert } from "../../utils/alerts";
 
-const useUpdateClienteForm = (id) => {
-  const [updateClient, setUpdateClient] = useState({
-    nombres: "",
-    apellidos: "",
-    cedula_identidad: "",
-    telefono: "",
-    direccion: "",
-    email: "",
+const useUpdateVehicleForm = (id) => {
+  const [updateVehicle, setUpdateVehicle] = useState({
+    placa: "",
+    marca: "",
+    modelo: "",
+    año: new Date().getFullYear(),
+    kilometraje: 0,
+    color: "",
+    tipo: "sedan",
+    cedula_cliente: "",
+    estado: "",
   });
   const [isLoadingUpdate, setIsLoadingUpdate] = useState(false);
   const [errorUpdate, setErrorUpdate] = useState(null);
@@ -24,15 +27,18 @@ const useUpdateClienteForm = (id) => {
 
     try {
       const update = {
-        nombres: updateClient.nombres,
-        apellidos: updateClient.apellidos,
-        cedula_identidad: updateClient.cedula_identidad,
-        telefono: updateClient.telefono,
-        direccion: updateClient.direccion,
-        email: updateClient.email,
+        placa: updateVehicle.placa,
+        marca: updateVehicle.marca,
+        modelo: updateVehicle.modelo,
+        año: parseInt(updateVehicle.año, 10),
+        kilometraje: parseInt(updateVehicle.kilometraje, 10),
+        color: updateVehicle.color,
+        tipo: updateVehicle.tipo,
+        cedula_cliente: updateVehicle.cedula_cliente,
+        estado: updateVehicle.estado
       };
       const response = await axios.patch(
-        "http://localhost:3000/client/clients/id/" + id + "/update",
+        "http://localhost:3000/vehicle/vehicles/id/" + id + "/update",
         update,
         {
           headers: {
@@ -46,19 +52,20 @@ const useUpdateClienteForm = (id) => {
           response.data.message || "Hubo un error al enviar los datos"
         );
       }
-
       setSuccessUpdate(true);
-      setUpdateClient({
-        nombres: "",
-        apellidos: "",
-        cedula_identidad: "",
-        telefono: "",
-        direccion: "",
-        email: "",
+      setUpdateVehicle({
+        placa: "",
+        marca: "",
+        modelo: "",
+        año: new Date().getFullYear(),
+        kilometraje: 0,
+        color: "",
+        tipo: "sedan",
+        cedula_cliente: "",
+        estado: "",
       });
-      showAlert("Cliente actualizado exitosamente ✔", "success");
+      showAlert("Vehículo actualizado exitosamente ✔", "success");
     } catch (err) {
-      console.error("Error en la solicitud:", err);
       setErrorUpdate(
         err.response?.data?.message ||
           err.response?.message ||
@@ -76,12 +83,12 @@ const useUpdateClienteForm = (id) => {
 
   const handleChangeUpdate = (e) => {
     const { name, value } = e.target;
-    setUpdateClient((prev) => ({ ...prev, [name]: value }));
+    setUpdateVehicle((prev) => ({ ...prev, [name]: value }));
   };
 
   return {
-    updateClient,
-    setUpdateClient,
+    updateVehicle,
+    setUpdateVehicle,
     isLoadingUpdate,
     errorUpdate,
     successUpdate,
@@ -90,4 +97,4 @@ const useUpdateClienteForm = (id) => {
   };
 };
 
-export default useUpdateClienteForm;
+export default useUpdateVehicleForm;

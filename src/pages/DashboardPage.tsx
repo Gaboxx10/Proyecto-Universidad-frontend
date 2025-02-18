@@ -120,7 +120,7 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-gray-900">
                 {data.vehicles}
               </p>{" "}
-              {/* Changed to 'data' */}
+
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
               <i className="bi bi-car-front text-2xl text-green-600"></i>

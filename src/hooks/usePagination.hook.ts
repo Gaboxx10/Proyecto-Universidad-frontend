@@ -27,5 +27,5 @@ export const usePagination = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [pagOffSet, page]);
 
-  return { pagOffSet, page, setPage,next, prev, resetPag, LIMIT, route, setRoute };
+  return { pagOffSet, page, setPage,next, prev, resetPag, LIMIT };
 };

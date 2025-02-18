@@ -2,15 +2,17 @@ import axios from "axios";
 import { useState } from "react";
 import { showAlert } from "../../utils/alerts";
 
-const useCreateClienteForm = () => {
-  const [newClient, setNewClient] = useState({
-    nombres: "",
-    apellidos: "",
-    cedula_identidad: "",
-    tipo_cliente: "PERSONA_NATURAL",
-    telefono: "",
-    direccion: "",
-    email: "",
+const useCreateVehicleForm = () => {
+  const [newVehicle, setNewVehicle] = useState({
+    placa: "",
+    marca: "",
+    modelo: "",
+    año: new Date().getFullYear(),
+    kilometraje: 0,
+    color: "",
+    tipo: "sedan",
+    cedula_cliente: "",
+    estado: ""
   });
   const [isLoadingCreate, setIsLoadingCreate] = useState(false);
   const [errorCreate, setErrorCreate] = useState(null);
@@ -22,18 +24,22 @@ const useCreateClienteForm = () => {
     setIsLoadingCreate(true);
     setErrorCreate(null);
     setSuccessCreate(false);
+    
+    const km = parseInt(newVehicle.kilometraje, 10);
+    const year = parseInt(newVehicle.año, 10);
+    newVehicle.kilometraje = km;
+    newVehicle.año = year;
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/client/create-client",
-        newClient,
+        "http://localhost:3000/vehicle/create-vehicle",
+        newVehicle,
         {
           headers: {
             Authorization: "Bearer " + localStorage.getItem("token"),
           },
         }
       );
-      console.log("Respuesta de la API:", response.data);
 
       if (response.data.statusCode !== 201) {
         throw new Error(
@@ -42,18 +48,21 @@ const useCreateClienteForm = () => {
       }
 
       setSuccessCreate(true);
-      setNewClient({
-        nombres: "",
-        apellidos: "",
-        cedula_identidad: "",
-        tipo_cliente: "PERSONA_NATURAL",
-        telefono: "",
-        direccion: "",
-        email: "",
+      setNewVehicle({
+        placa: "",
+        marca: "",
+        modelo: "",
+        año: new Date().getFullYear(),
+        kilometraje: 0,
+        color: "",
+        tipo: "Sedan",
+        cedula_cliente: "",
+        estado: ""
       });
       setIsLoadingCreate(false);
-      showAlert("Cliente creado exitosamente 🙍‍♂️", "success");
+      showAlert("Vehículo creado exitosamente 🚙", "success");
     } catch (err) {
+      console.error("Error en la solicitud:", err);
       setErrorCreate(
         err.response?.data?.message ||
           err.response?.message ||
@@ -71,12 +80,12 @@ const useCreateClienteForm = () => {
 
   const handleChangeCreate = (e) => {
     const { name, value } = e.target;
-    setNewClient((prev) => ({ ...prev, [name]: value }));
+    setNewVehicle((prev) => ({ ...prev, [name]: value }));
   };
 
   return {
-    newClient,
-    setNewClient,
+    newVehicle,
+    setNewVehicle,
     isLoadingCreate,
     errorCreate,
     successCreate,
@@ -85,4 +94,4 @@ const useCreateClienteForm = () => {
   };
 };
 
-export default useCreateClienteForm;
+export default useCreateVehicleForm;
